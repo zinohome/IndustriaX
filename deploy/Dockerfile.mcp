@@ -1,0 +1,6 @@
+FROM python:3.12-slim
+WORKDIR /app
+COPY pyproject.toml ./
+COPY industriax ./industriax
+RUN pip install --no-cache-dir .
+# 健康检查由 compose healthcheck 调 health() 完成

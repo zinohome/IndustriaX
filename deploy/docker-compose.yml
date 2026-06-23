@@ -1,0 +1,121 @@
+name: industriax
+
+networks:
+  1panel-network:
+    external: true
+
+services:
+  postgres:
+    image: apache/age:PG16_latest
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - /data/industriax/postgres:/var/lib/postgresql/data
+      - ./init/age.sql:/docker-entrypoint-initdb.d/age.sql:ro
+    networks:
+      - 1panel-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  temporal:
+    image: temporalio/auto-setup:1.24
+    environment:
+      DB: postgres12
+      POSTGRES_SEEDS: postgres
+      POSTGRES_PWD: ${POSTGRES_PASSWORD}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - 1panel-network
+    healthcheck:
+      test: ["CMD", "tctl", "--address", "temporal:7233", "cluster", "health"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+
+  ollama:
+    image: ollama/ollama:latest
+    volumes:
+      - /data/industriax/ollama:/root/.ollama
+    networks:
+      - 1panel-network
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD-SHELL", "ollama list || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+
+  doc-mcp:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.mcp
+    command: ["python", "-m", "industriax.mcp.doc_server"]
+    networks:
+      - 1panel-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import industriax.mcp.doc_server as m; assert m.health()['status']=='ok'\""]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
+  graph-mcp:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.mcp
+    command: ["python", "-m", "industriax.mcp.graph_server"]
+    networks:
+      - 1panel-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import industriax.mcp.graph_server as m; assert m.health()['status']=='ok'\""]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
+  memory-mcp:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.mcp
+    command: ["python", "-m", "industriax.mcp.memory_server"]
+    networks:
+      - 1panel-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import industriax.mcp.memory_server as m; assert m.health()['status']=='ok'\""]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
+  skill-tools-mcp:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.mcp
+    command: ["python", "-m", "industriax.mcp.skill_tools_server"]
+    networks:
+      - 1panel-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import industriax.mcp.skill_tools_server as m; assert m.health()['status']=='ok'\""]
+      interval: 15s
+      timeout: 10s
+      retries: 5
