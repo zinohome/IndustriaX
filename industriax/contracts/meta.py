@@ -12,10 +12,32 @@ class DataLevel(str, Enum):
     def _rank(self) -> int:
         return {"一般": 0, "重要": 1, "核心": 2}[self.value]
 
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, DataLevel):
+            return NotImplemented  # type: ignore[return-value]
+        return self._rank == other._rank
+
     def __lt__(self, other: "DataLevel") -> bool:  # type: ignore[override]
         if not isinstance(other, DataLevel):
             return NotImplemented
         return self._rank < other._rank
+
+    def __le__(self, other: "DataLevel") -> bool:  # type: ignore[override]
+        if not isinstance(other, DataLevel):
+            return NotImplemented
+        return self._rank <= other._rank
+
+    def __gt__(self, other: "DataLevel") -> bool:  # type: ignore[override]
+        if not isinstance(other, DataLevel):
+            return NotImplemented
+        return self._rank > other._rank
+
+    def __ge__(self, other: "DataLevel") -> bool:  # type: ignore[override]
+        if not isinstance(other, DataLevel):
+            return NotImplemented
+        return self._rank >= other._rank
+
+    __hash__ = str.__hash__
 
 
 class DataDomain(str, Enum):
