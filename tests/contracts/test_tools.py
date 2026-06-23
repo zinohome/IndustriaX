@@ -1,4 +1,3 @@
-import inspect
 import pytest
 import pydantic
 from pydantic import ValidationError
@@ -63,8 +62,6 @@ def test_memory_forget_requires_idempotency_key():
 
 def test_every_request_model_is_classified():
     """Guard against forgetting to add a new *Request model to READ_ONLY_REQUESTS or WRITE_REQUESTS."""
-    all_classified = set(tools.READ_ONLY_REQUESTS) | set(tools.WRITE_REQUESTS)
-
     # Collect request models defined in this module (not imported ones like MetaFields),
     # whose name ends with "Request", excluding the abstract base WriteToolRequest.
     request_models = {

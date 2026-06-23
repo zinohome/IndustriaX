@@ -1,4 +1,7 @@
-import subprocess, pathlib, yaml, os
+import subprocess
+import pathlib
+import yaml
+import os
 
 COMPOSE = pathlib.Path("deploy/docker-compose.yml")
 

@@ -1,4 +1,4 @@
-import subprocess, pathlib
+import subprocess
 
 def test_bundle_script_lists_all_images(tmp_path):
     # dry-run 模式只打印将打包的镜像清单，不真正 docker save
