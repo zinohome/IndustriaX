@@ -6,7 +6,10 @@ networks:
 
 services:
   postgres:
-    image: apache/age:release_PG16_1.6.0
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.postgres
+    image: industriax/postgres-age-pgvector:pg16
     environment:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:

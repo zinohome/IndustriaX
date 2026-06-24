@@ -1,0 +1,8 @@
+# IndustriaX Postgres = Apache AGE (graph) + pgvector (vector) in one PG16 instance.
+# The stock apache/age image ships AGE only; the architecture (spec §5) requires
+# Postgres16 + pgvector + AGE together, so we add pgvector from the PGDG apt repo
+# (already configured in the base image).
+FROM apache/age:release_PG16_1.6.0
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends postgresql-16-pgvector \
+ && rm -rf /var/lib/apt/lists/*
