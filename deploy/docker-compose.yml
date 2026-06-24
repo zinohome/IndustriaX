@@ -6,7 +6,7 @@ networks:
 
 services:
   postgres:
-    image: apache/age:PG16_latest
+    image: apache/age:PG16_1.5.0
     environment:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
@@ -38,7 +38,7 @@ services:
       retries: 10
 
   ollama:
-    image: ollama/ollama:latest
+    image: ollama/ollama:0.5.7
     volumes:
       - /data/industriax/ollama:/root/.ollama
     networks:
@@ -119,3 +119,97 @@ services:
       interval: 15s
       timeout: 10s
       retries: 5
+
+  # --- RAGFlow Stack (option A: Infinity doc engine, Apache-2.0) ---
+
+  infinity:
+    image: infiniflow/infinity:v0.7.0
+    volumes:
+      - /data/industriax/infinity:/var/infinity
+    networks:
+      - 1panel-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:23820/admin/node/current || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+
+  mysql:
+    image: mysql:8.0.39
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_PASSWORD:-change-me}
+    volumes:
+      - /data/industriax/mysql:/var/lib/mysql
+    networks:
+      - 1panel-network
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+
+  minio:
+    image: minio/minio:RELEASE.2025-04-22T22-12-26Z
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD:-minioadmin}
+    volumes:
+      - /data/industriax/minio:/data
+    networks:
+      - 1panel-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9000/minio/health/live || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+
+  valkey:
+    image: valkey/valkey:8
+    volumes:
+      - /data/industriax/valkey:/data
+    networks:
+      - 1panel-network
+    healthcheck:
+      test: ["CMD-SHELL", "valkey-cli ping || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+
+  ragflow:
+    image: infiniflow/ragflow:v0.20.5
+    environment:
+      DOC_ENGINE: infinity
+    depends_on:
+      infinity:
+        condition: service_healthy
+      mysql:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      valkey:
+        condition: service_healthy
+    volumes:
+      - /data/industriax/ragflow:/ragflow/data
+    networks:
+      - 1panel-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9380/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+
+  # Dev 环境说明：LLM/Embedding 走外部 192.168.66.163 的 Ollama，Reranker(TEI) 建议部署到
+  # 192.168.66.163(12G GPU) 用 GPU 镜像；compose 内默认 CPU 镜像作私有化部署基线。
+  tei:
+    image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.7
+    command: ["--model-id", "BAAI/bge-reranker-v2-m3"]
+    volumes:
+      - /data/industriax/tei:/data
+    networks:
+      - 1panel-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:80/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 10

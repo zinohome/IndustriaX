@@ -22,7 +22,8 @@ def test_compose_is_valid_and_conformant():
     assert spec.get("name") == "industriax"
     assert "1panel-network" in spec.get("networks", {})
     services = spec["services"]
-    for required in ["postgres", "temporal", "ollama", "doc-mcp", "graph-mcp", "memory-mcp", "skill-tools-mcp"]:
+    for required in ["postgres", "temporal", "ollama", "doc-mcp", "graph-mcp", "memory-mcp", "skill-tools-mcp",
+                     "ragflow", "infinity", "mysql", "minio", "valkey", "tei"]:
         assert required in services, f"missing service {required}"
     # 每个服务必须有 healthcheck
     for name, svc in services.items():
