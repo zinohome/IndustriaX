@@ -180,7 +180,7 @@ services:
       retries: 10
 
   ragflow:
-    image: infiniflow/ragflow:v0.20.5
+    image: infiniflow/ragflow:v0.20.5-slim
     environment:
       DOC_ENGINE: infinity
     depends_on:
