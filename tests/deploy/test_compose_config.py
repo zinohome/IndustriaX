@@ -7,9 +7,10 @@ COMPOSE = pathlib.Path("deploy/docker-compose.yml")
 
 
 def test_compose_is_valid_and_conformant():
-    # Ensure POSTGRES_PASSWORD is set so docker compose config resolves the variable
+    # Required secrets are fail-closed (${VAR:?...}); set them so `docker compose config` resolves.
     env = os.environ.copy()
-    env.setdefault("POSTGRES_PASSWORD", "test-password")
+    for key in ("POSTGRES_PASSWORD", "MYSQL_PASSWORD", "MINIO_USER", "MINIO_PASSWORD", "VALKEY_PASSWORD"):
+        env.setdefault(key, "test-secret")
 
     # docker compose config 校验语法 + 解析变量
     out = subprocess.run(
